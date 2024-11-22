@@ -624,6 +624,7 @@ Please install mingw-w64, clang/llvm-dlltool/lld, or llvm-mingw.])
 
     case $wine_arch in
       i386) WINE_TRY_PE_CFLAGS([-fno-omit-frame-pointer])
+            WINE_TRY_PE_CFLAGS([-mstack-alignment=4])
             WINE_TRY_PE_CFLAGS([-mpreferred-stack-boundary=2])
             WINE_TRY_PE_CFLAGS([-mlong-double-64])
             WINE_TRY_PE_CFLAGS([-msse2])
