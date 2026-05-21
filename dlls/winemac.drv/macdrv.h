@@ -394,5 +394,19 @@ static inline UINT asciiz_to_unicode(WCHAR *dst, const char *src)
     return (p - dst) * sizeof(WCHAR);
 }
 
+/* ExtEscape definitions */
+
+enum macdrv_escape_codes
+{
+    MACDRV_ESCAPE_GET_SURFACE = 6790,
+    MACDRV_ESCAPE_RELEASE_SURFACE,
+};
+
+struct macdrv_escape_surface
+{
+    UINT64 surface;
+    UINT64 layer;
+};
+
 #undef BOOL
 #endif  /* __WINE_MACDRV_H */
