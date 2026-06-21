@@ -1785,8 +1785,6 @@ static HRESULT wm_reader_read_stream_sample(struct wm_reader *reader, struct wg_
     TRACE("Got buffer for '%s' stream %p.\n", get_major_type_string(stream->format.major_type), stream);
 
     capacity = buffer->size - stream->current_buffer_offset;
-    if (stream->format.major_type == WG_MAJOR_TYPE_AUDIO)
-        capacity = min(capacity, 16384);
 
     if (FAILED(hr = wm_stream_allocate_sample(stream, capacity, sample)))
     {
