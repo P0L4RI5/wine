@@ -174,7 +174,9 @@ static void d2d_device_context_draw(struct d2d_device_context *render_target, en
     ID3D11DeviceContext1_OMSetRenderTargets(context, 1, &render_target->target.bitmap->rtv, NULL);
     if (brush)
     {
-        ID3D11DeviceContext1_OMSetBlendState(context, render_target->bs, NULL, D3D11_DEFAULT_SAMPLE_MASK);
+        ID3D11DeviceContext1_OMSetBlendState(context,
+            render_target->drawing_state.primitiveBlend == D2D1_PRIMITIVE_BLEND_COPY ? NULL : render_target->bs,
+            NULL, D3D11_DEFAULT_SAMPLE_MASK);
         d2d_brush_bind_resources(brush, render_target, 0);
     }
     else
