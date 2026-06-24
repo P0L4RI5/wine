@@ -894,7 +894,7 @@ NTSTATUS WINAPI NtGdiDdDDIQueryAdapterInfo( D3DKMT_QUERYADAPTERINFO *desc )
         VkExtensionProperties *prop = NULL;
         uint32_t prop_count = 0;
         VkPhysicalDeviceProperties2KHR properties2 = {0};
-        BOOL fp8_support = FALSE, wmma = FALSE;
+        BOOL fp8_support = FALSE, wmma = FALSE, rdna2 = FALSE;
         struct vulkan_physical_device *physical_device;
         struct vulkan_instance *instance;
         const char *e;
@@ -922,6 +922,7 @@ NTSTATUS WINAPI NtGdiDdDDIQueryAdapterInfo( D3DKMT_QUERYADAPTERINFO *desc )
         {
             if (!strcmp( prop[i].extensionName, "VK_EXT_shader_float8" )) fp8_support = TRUE;
             if (!strcmp( prop[i].extensionName, "VK_NV_cooperative_matrix2" )) wmma = TRUE;
+            if (!strcmp( prop[i].extensionName, "VK_KHR_fragment_shading_rate" )) rdna2 = TRUE;
         }
 
         free( prop );
@@ -935,11 +936,16 @@ NTSTATUS WINAPI NtGdiDdDDIQueryAdapterInfo( D3DKMT_QUERYADAPTERINFO *desc )
                 data[0xc] = 0x98; /* APU/GPU Family */
                 data[0xd] = 0x51; /* Revision/which GPU it is in that family */
             }
-            else
+            else if (rdna2)
             {
                 /* Navi31 */
                 data[0xc] = 0x91; /* APU/GPU Family */
                 data[0xd] = 0x3; /* Revision/which GPU it is in that family */
+            }
+            else
+            {
+                ERR("GPU does not support FSR4 FP8 or I8! Please report a bug if this is inaccurate!\n");
+                return STATUS_NOT_IMPLEMENTED;
             }
 
             return STATUS_SUCCESS;
