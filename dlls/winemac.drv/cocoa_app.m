@@ -73,6 +73,21 @@ static NSString* WineLocalizedString(unsigned int stringID)
 }
 
 
+static NSCursor* WineTransparentCursor(void)
+{
+    static NSCursor* transparentCursor;
+    static dispatch_once_t once;
+
+    dispatch_once(&once, ^{
+        NSImage* image = [[NSImage alloc] initWithSize:NSMakeSize(1, 1)];
+        transparentCursor = [[NSCursor alloc] initWithImage:image hotSpot:NSZeroPoint];
+        [image release];
+    });
+
+    return transparentCursor;
+}
+
+
 @implementation WineApplication
 
 @synthesize wineController;
@@ -1005,22 +1020,20 @@ static NSString* WineLocalizedString(unsigned int stringID)
     {
         if (force || lastTargetWindow)
         {
-            if (clientWantsCursorHidden && !cursorHidden)
-            {
-                [NSCursor hide];
-                cursorHidden = TRUE;
-            }
+            NSCursor* desiredCursor = clientWantsCursorHidden ? WineTransparentCursor() : cursor;
+            BOOL cursorWasReset = desiredCursor && [NSCursor currentCursor] != desiredCursor;
 
-            if (!cursorIsCurrent)
+            if (force || !cursorIsCurrent || cursorHidden != clientWantsCursorHidden ||
+                cursorWasReset)
             {
-                [cursor set];
+                [desiredCursor set];
                 cursorIsCurrent = TRUE;
-            }
+                cursorHidden = clientWantsCursorHidden;
 
-            if (!clientWantsCursorHidden && cursorHidden)
-            {
-                [NSCursor unhide];
-                cursorHidden = FALSE;
+                if (cursorHidden || [cursorFrames count])
+                    NSApp.presentationOptions |= NSApplicationPresentationDisableCursorLocationAssistance;
+                else
+                    NSApp.presentationOptions &= ~NSApplicationPresentationDisableCursorLocationAssistance;
             }
         }
         else
@@ -1029,11 +1042,8 @@ static NSString* WineLocalizedString(unsigned int stringID)
             {
                 [[NSCursor arrowCursor] set];
                 cursorIsCurrent = FALSE;
-            }
-            if (cursorHidden)
-            {
-                [NSCursor unhide];
                 cursorHidden = FALSE;
+                NSApp.presentationOptions &= ~NSApplicationPresentationDisableCursorLocationAssistance;
             }
         }
     }
@@ -1922,6 +1932,11 @@ static NSString* WineLocalizedString(unsigned int stringID)
                 [self handleCommandTab];
             }
         }
+
+        if (type == NSEventTypeCursorUpdate)
+            [self updateCursor:TRUE];
+        else if (clientWantsCursorHidden && [NSApp isActive])
+            [self updateCursor:FALSE];
     }
 
     - (void) setupObservations
@@ -2318,6 +2333,10 @@ static NSString* WineLocalizedString(unsigned int stringID)
         // movement deltas are invalidated.  Make sure the next mouse move event
         // starts over from an absolute baseline.
         forceNextMouseMoveAbsolute = TRUE;
+
+        // macOS may restore its cursor while another application is active.
+        // Reapply the cursor requested by the Windows application on activation.
+        [self updateCursor:TRUE];
     }
 
     - (void)applicationDidResignActive:(NSNotification *)notification
