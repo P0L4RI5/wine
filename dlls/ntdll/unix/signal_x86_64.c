@@ -2913,7 +2913,14 @@ void init_syscall_frame( LPTHREAD_START_ROUTINE entry, void *arg, TEB *teb )
 #elif defined(__NetBSD__)
     sysarch( X86_64_SET_GSBASE, &teb );
 #elif defined (__APPLE__)
+    __asm__ volatile ("movq %0,%%gs:%c1" :: "r" (teb->Tib.Self), "n" (FIELD_OFFSET(TEB, Tib.Self)));
+    __asm__ volatile ("movq %0,%%gs:%c1" :: "r" (teb->ThreadLocalStoragePointer), "n" (FIELD_OFFSET(TEB, ThreadLocalStoragePointer)));
+    __asm__ volatile ("movq %0,%%gs:%c1" :: "r" (teb->Peb), "n" (FIELD_OFFSET(TEB, Peb)));
     thread_data->pthread_teb = mac_thread_gsbase();
+    /* alloc_tls_slot() needs to poke a value to an address relative to each
+       thread's gsbase.  Have each thread record its gsbase pointer into its
+       TEB so alloc_tls_slot() can find it. */
+    teb->Instrumentation[0] = thread_data->pthread_teb;
 #else
 # error Please define setting %gs for your architecture
 #endif
@@ -3022,7 +3029,12 @@ __ASM_GLOBAL_FUNC( signal_start_thread,
  */
 __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher,
                    __ASM_LOCAL_LABEL("__wine_syscall_dispatcher_gs_load") ":\n\t"
+#ifdef __APPLE__
+                   "movq %gs:0x30,%rcx\n\t"
+                   "movq 0x378(%rcx),%rcx\n\t"
+#else
                    "movq %gs:0x378,%rcx\n\t"       /* thread_data->syscall_frame */
+#endif
                    "popq 0x70(%rcx)\n\t"           /* frame->rip */
                    __ASM_CFI(".cfi_adjust_cfa_offset -8\n\t")
                    __ASM_CFI_REG_IS_AT2(rip, rcx, 0xf0,0x00)
@@ -3301,7 +3313,12 @@ __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher,
                    "popfq\n\t"
                    "iretq\n"
                    /* RESTORE_FLAGS_INSTRUMENTATION */
+#ifdef __APPLE__
+                   "2:\tmovq %gs:0x30,%r10\n\t"
+                   "movq 0x330(%r10),%r10\n\t"
+#else
                    "2:\tmovq %gs:0x330,%r10\n\t"  /* amd64_thread_data()->instrumentation_callback */
+#endif
                    "movq (%r10),%r10\n\t"
                    "test %r10,%r10\n\t"
                    "jz 3b\n\t"
@@ -3360,7 +3377,12 @@ __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher_return,
                    "jmp " __ASM_LOCAL_LABEL("__wine_syscall_dispatcher_return") )
 
 __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher_instrumentation,
+#ifdef __APPLE__
+                   "movq %gs:0x30,%rcx\n\t"
+                   "movq 0x378(%rcx),%rcx\n\t"
+#else
                    "movq %gs:0x378,%rcx\n\t"       /* thread_data->syscall_frame */
+#endif
                    "popq 0x70(%rcx)\n\t"           /* frame->rip */
                    __ASM_CFI(".cfi_adjust_cfa_offset -8\n\t")
                    __ASM_CFI_REG_IS_AT2(rip, rcx, 0xf0,0x00)
@@ -3378,7 +3400,12 @@ __ASM_GLOBAL_FUNC( __wine_syscall_dispatcher_instrumentation,
 __ASM_GLOBAL_FUNC( __wine_unix_call_dispatcher,
                    "movq %rcx,%r10\n\t"
                    __ASM_LOCAL_LABEL("__wine_unix_call_dispatcher_gs_load") ":\n\t"
+#ifdef __APPLE__
+                   "movq %gs:0x30,%rcx\n\t"
+                   "movq 0x378(%rcx),%rcx\n\t"
+#else
                    "movq %gs:0x378,%rcx\n\t"       /* thread_data->syscall_frame */
+#endif
                    "popq 0x70(%rcx)\n\t"           /* frame->rip */
                    __ASM_CFI(".cfi_adjust_cfa_offset -8\n\t")
                    __ASM_CFI_REG_IS_AT2(rip, rcx, 0xf0,0x00)
