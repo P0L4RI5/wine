@@ -3519,6 +3519,8 @@ struct create_window_request
     unsigned int   style;
     unsigned int   ex_style;
     unsigned int   ansi;
+    struct ratio   dpi;
+    struct ratio   raw_dpi;
     /* VARARG(class,unicode_str); */
 };
 struct create_window_reply
@@ -7160,6 +7162,6 @@ union generic_reply
     struct d3dkmt_mutex_release_reply d3dkmt_mutex_release_reply;
 };
 
-#define SERVER_PROTOCOL_VERSION 956
+#define SERVER_PROTOCOL_VERSION 957
 
 #endif /* __WINE_WINE_SERVER_PROTOCOL_H */
