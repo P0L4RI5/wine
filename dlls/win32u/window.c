@@ -470,6 +470,8 @@ BOOL client_surface_get_size( struct client_surface *surface, SIZE *virtual_size
 
 void use_window_client_surface( struct client_surface *surface, BOOL use )
 {
+    if (surface->offscreen) return;
+
     TRACE( "surface %s, use %u\n", debugstr_client_surface( surface ), use );
 
     pthread_mutex_lock( &surfaces_lock );

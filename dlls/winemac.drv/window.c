@@ -1169,28 +1169,22 @@ struct client_surface *macdrv_CreateClientSurface(HWND hwnd, int pixel_format, B
 
 BOOL macdrv_client_surface_acquire_metal_swapchain(struct macdrv_client_surface *surface)
 {
-    HWND hwnd = surface->client.hwnd;
     struct macdrv_win_data *data;
 
     if (surface->metal_swapchain) return TRUE;
 
-    if ((data = get_win_data(hwnd)))
+    if ((data = get_win_data(surface->client.hwnd)))
     {
         release_win_data(data);
         surface->metal_swapchain = macdrv_create_view_swapchain(surface->cocoa_view);
     }
     else
     {
-        RECT rect;
-
-        if (NtUserGetAncestor(hwnd, GA_ROOT) != hwnd)
-        {
-            FIXME("Cross-process child window Metal swapchains are not implemented\n");
-            return FALSE;
-        }
-
-        if (!NtUserGetClientRect(hwnd, &rect, NtUserGetWinMonitorDpi(hwnd, MDT_RAW_DPI))) return FALSE;
-        surface->metal_swapchain = macdrv_create_offscreen_swapchain(hwnd, cgrect_from_rect(rect));
+        surface->metal_swapchain = macdrv_create_offscreen_swapchain(
+            surface->client.toplevel,
+            cgrect_from_rect(surface->client.monitor_rect)
+        );
+        surface->client.offscreen = TRUE;
     }
 
     return surface->metal_swapchain != NULL;

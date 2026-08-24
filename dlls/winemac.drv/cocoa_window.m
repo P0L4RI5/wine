@@ -3912,7 +3912,10 @@ void macdrv_view_release_metal_view(macdrv_metal_view v)
     offscreen_layer.backgroundColor = CGColorGetConstantColor(kCGColorBlack);
     offscreen_layer.contentsScale = retina_on ? 2.0 : 1.0;
     [offscreen_layer setBounds:cgrect_mac_from_win(bounds)];
-    [offscreen_layer setAnchorPoint:CGPointMake(0, 0)];
+    [offscreen_layer setAnchorPoint:CGPointMake(
+        bounds.size.width == 0 ? 0 : -bounds.origin.x / bounds.size.width,
+        bounds.size.height == 0 ? 0 : -bounds.origin.y / bounds.size.height
+    )];
 
     /* Export the CAMetalLayer from the rendering process, then have the
      * target HWND's owner host it using CALayerHost. */
