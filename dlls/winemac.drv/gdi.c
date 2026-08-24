@@ -259,7 +259,7 @@ static INT macdrv_ExtEscape(PHYSDEV dev, INT escape, INT in_count, LPCVOID in_da
 
         if (out_count < sizeof(*data)) return FALSE;
 
-        if (!hwnd || !(surface = macdrv_client_surface_create(hwnd))) return FALSE;
+        if (!hwnd || !(surface = impl_from_client_surface(get_unused_client_surface(hwnd, 0, FALSE)))) return FALSE;
 
         if (!macdrv_client_surface_acquire_metal_swapchain(surface))
         {
@@ -269,6 +269,9 @@ static INT macdrv_ExtEscape(PHYSDEV dev, INT escape, INT in_count, LPCVOID in_da
 
         data->surface = (UINT_PTR)surface;
         data->layer = (UINT_PTR)macdrv_swapchain_get_layer(surface->metal_swapchain);
+
+        use_window_client_surface(&surface->client, TRUE);
+
         return TRUE;
     }
     case MACDRV_ESCAPE_RELEASE_SURFACE:
@@ -276,12 +279,16 @@ static INT macdrv_ExtEscape(PHYSDEV dev, INT escape, INT in_count, LPCVOID in_da
         const struct macdrv_escape_surface *data = in_data;
         struct macdrv_client_surface *surface;
 
-        if (in_count < sizeof(*data)) return FALSE;
-
-        if (!data) return FALSE;
+        if (!data || in_count < sizeof(*data)) return FALSE;
 
         surface = (struct macdrv_client_surface *)(UINT_PTR)data->surface;
-        if (surface) client_surface_release(&surface->client);
+
+        if (surface)
+        {
+            use_window_client_surface(&surface->client, FALSE);
+            client_surface_release(&surface->client);
+        }
+
         return TRUE;
     }
     }
