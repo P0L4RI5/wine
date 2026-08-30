@@ -152,6 +152,7 @@ extern bool allow_immovable_windows;
 extern bool use_confinement_cursor_clipping;
 extern bool cursor_clipping_locks_windows;
 extern bool use_precise_scrolling;
+extern bool use_gcmouse;
 extern int gl_surface_mode;
 extern CFDictionaryRef localized_strings;
 extern bool retina_enabled;  /* Whether Retina mode is enabled via registry setting. */
@@ -312,6 +313,7 @@ enum {
     MOUSE_BUTTON,
     MOUSE_MOVED_RELATIVE,
     MOUSE_MOVED_ABSOLUTE,
+    MOUSE_MOVED_RAW,
     MOUSE_SCROLL,
     QUERY_EVENT,
     QUERY_EVENT_NO_PREEMPT_WAIT,
@@ -499,6 +501,8 @@ extern void macdrv_set_query_done(macdrv_query *query);
 extern int macdrv_register_hot_key(WineEventQueue *queue, unsigned int vkey, unsigned int mod_flags,
                                    unsigned int keycode, unsigned int modifiers);
 extern void macdrv_unregister_hot_key(WineEventQueue *queue, unsigned int vkey, unsigned int mod_flags);
+extern void macdrv_start_gcmouse_input(void);
+extern bool macdrv_gcmouse_input_active(void);
 
 
 /* window */
