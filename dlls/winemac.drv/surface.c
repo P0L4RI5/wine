@@ -143,7 +143,6 @@ static BOOL macdrv_surface_flush(struct window_surface *window_surface, const RE
 {
     struct macdrv_window_surface *surface = get_mac_surface(window_surface);
     IOSurfaceRef io_surface = surface->back_buffer;
-    struct macdrv_win_data *data;
 
     surface->back_buffer = surface->front_buffer;
     surface->front_buffer = io_surface;
@@ -181,19 +180,6 @@ static BOOL macdrv_surface_flush(struct window_surface *window_surface, const RE
     {
         surface->shape_changed = TRUE;
         macdrv_window_shape_changed(surface->window, !!shape_bits);
-    }
-
-    /* The window may have been previously drawn with client_surface, for example, when the window
-     * had been a target for a D3D swapchain. Hide the client_view so that it doesn't occlude the
-     * content in the window_surface */
-    if ((data = get_win_data(window_surface->hwnd)))
-    {
-        if (data->client_view)
-        {
-            macdrv_set_view_hidden(data->client_view, TRUE);
-            data->client_view = NULL;
-        }
-        release_win_data(data);
     }
 
     return TRUE;
