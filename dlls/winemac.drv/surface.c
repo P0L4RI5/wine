@@ -125,10 +125,7 @@ static void apply_shape_alpha(IOSurfaceRef io_surface, const BITMAPINFO *shape_i
             for (x = 0; x < width; x++)
             {
                 BYTE bit = (src_row[x / 8] >> (7 - (x % 8))) & 1;
-                if (bit)
-                    dst_row[x * 4 + 3] = 255;
-                else
-                    ((DWORD *)dst_row)[x] = 0;
+                if (!bit) ((DWORD *)dst_row)[x] = 0;
             }
         }
     }
@@ -164,7 +161,7 @@ static BOOL macdrv_surface_flush(struct window_surface *window_surface, const RE
             .width = IOSurfaceGetWidth(io_surface),
             .rowBytes = IOSurfaceGetBytesPerRow(io_surface),
         };
-        vImageSelectChannels_ARGB8888(&src, &dst, &dst, 0x8 | 0x4 | 0x2, kvImageNoFlags);
+        vImageSelectChannels_ARGB8888(&src, &dst, &dst, 0b1111, kvImageNoFlags);
     }
 
     if (shape_changed || surface->shape_changed)
