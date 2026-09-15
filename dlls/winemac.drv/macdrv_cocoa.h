@@ -124,13 +124,13 @@ enum {
 #define DECLARE_CLASS(x) typedef struct __ ## x x
 #define DECLARE_PROTO(x) typedef struct __ ## x *id_ ## x
 #endif
+DECLARE_CLASS(CAMetalLayer);
+DECLARE_CLASS(NSOpenGLContext);
 DECLARE_CLASS(WineContentView);
 DECLARE_CLASS(WineEventQueue);
 DECLARE_CLASS(WineMetalView);
-DECLARE_CLASS(WineOpenGLContext);
 DECLARE_CLASS(WineStatusItem);
 DECLARE_CLASS(WineWindow);
-DECLARE_CLASS(CAMetalLayer);
 DECLARE_PROTO(MTLDevice);
 DECLARE_PROTO(WineMetalSwapChain);
 #undef DECLARE_INTERFACE
@@ -561,8 +561,6 @@ extern void macdrv_dispose_view(WineContentView *view);
 extern void macdrv_set_view_frame(WineContentView *view, CGRect rect);
 extern void macdrv_set_view_superview(WineContentView *view, WineContentView *parent, WineWindow *window, WineContentView *prev, WineContentView *next);
 extern void macdrv_set_view_hidden(WineContentView *view, bool hidden);
-extern void macdrv_add_view_opengl_context(WineContentView *view, WineOpenGLContext *context);
-extern void macdrv_remove_view_opengl_context(WineContentView *view, WineOpenGLContext *context);
 extern id_MTLDevice macdrv_create_metal_device(void);
 extern void macdrv_release_metal_device(id_MTLDevice device);
 extern WineMetalView *macdrv_view_create_metal_view(WineContentView *view, id_MTLDevice device);
@@ -604,12 +602,11 @@ extern int macdrv_set_pasteboard_data(CFStringRef type, CFDataRef data, WineWind
 
 
 /* opengl */
-extern WineOpenGLContext *macdrv_create_opengl_context(void* cglctx);
-extern CGLContextObj macdrv_opengl_context_cgl(WineOpenGLContext *context);
-extern void macdrv_dispose_opengl_context(WineOpenGLContext *context);
-extern void macdrv_make_context_current(WineOpenGLContext *context, WineContentView *view, CGRect r);
-extern void macdrv_update_opengl_context(WineOpenGLContext *context);
-extern void macdrv_flush_opengl_context(WineOpenGLContext *context);
+extern NSOpenGLContext *macdrv_create_opengl_context(void* cglctx);
+extern CGLContextObj macdrv_opengl_context_cgl(NSOpenGLContext *context);
+extern void macdrv_dispose_opengl_context(NSOpenGLContext *context);
+extern void macdrv_opengl_context_set_view(NSOpenGLContext *context, WineContentView *view);
+extern void macdrv_flush_opengl_context(NSOpenGLContext *context);
 
 
 /* systray / status item */

@@ -63,14 +63,14 @@ struct macdrv_context
     int                     swap_interval;
 };
 
-static WineOpenGLContext *macdrv_context_get_cocoa(const struct macdrv_context *context)
+static NSOpenGLContext *macdrv_context_get_cocoa(const struct macdrv_context *context)
 {
     return context ? context->base.host_context : NULL;
 }
 
 static const char *debugstr_macdrv_context(const struct macdrv_context *context)
 {
-    WineOpenGLContext *cocoa_context = macdrv_context_get_cocoa(context);
+    NSOpenGLContext *cocoa_context = macdrv_context_get_cocoa(context);
     if (!context) return "(null)";
     return wine_dbg_sprintf("%p/%p/%p", context, cocoa_context, macdrv_opengl_context_cgl(cocoa_context));
 }
@@ -1303,7 +1303,7 @@ static BOOL init_gl_info(void)
 /**********************************************************************
  *              create_context
  */
-static BOOL create_context(struct macdrv_context *context, int format, WineOpenGLContext *share, BOOL *shared)
+static BOOL create_context(struct macdrv_context *context, int format, NSOpenGLContext *share, BOOL *shared)
 {
     const pixel_format *pf;
     CGLPixelFormatAttribute attribs[64];
@@ -1461,7 +1461,7 @@ static void macdrv_surface_destroy(struct opengl_drawable *base)
 
 static void macdrv_context_select_drawable(struct macdrv_context *context, struct opengl_drawable *drawable)
 {
-    WineOpenGLContext *cocoa_context = macdrv_context_get_cocoa(context);
+    NSOpenGLContext *cocoa_context = macdrv_context_get_cocoa(context);
     CGLContextObj cgl = macdrv_opengl_context_cgl(cocoa_context);
     GLint enabled;
 
@@ -1472,14 +1472,14 @@ static void macdrv_context_select_drawable(struct macdrv_context *context, struc
     if (drawable && drawable->client)
     {
         struct macdrv_client_surface *surface = impl_from_client_surface(drawable->client);
-        RECT rect = surface->client.virtual_rect;
-        macdrv_make_context_current(cocoa_context, surface->cocoa_view, cgrect_from_rect(rect));
+        CGLSetParameter(cgl, kCGLCPSurfaceBackingSize, (int *)&drawable->virtual_size);
+        if (!enabled) CGLEnable(cgl, kCGLCESurfaceBackingSize);
+        macdrv_opengl_context_set_view(cocoa_context, surface->cocoa_view);
         return;
     }
 
-    if (CGLIsEnabled(context->base.host_context, kCGLCESurfaceBackingSize, &enabled) != kCGLNoError) enabled = 0;
-    if (enabled) CGLDisable(context->base.host_context, kCGLCESurfaceBackingSize);
-    macdrv_make_context_current(cocoa_context, NULL, CGRectNull);
+    if (enabled) CGLDisable(cgl, kCGLCESurfaceBackingSize);
+    macdrv_opengl_context_set_view(cocoa_context, NULL);
 
     if (drawable)
     {
@@ -1494,7 +1494,7 @@ static void macdrv_context_select_drawable(struct macdrv_context *context, struc
  */
 static BOOL set_swap_interval(struct macdrv_context *context, long interval)
 {
-    WineOpenGLContext *cocoa_context = macdrv_context_get_cocoa(context);
+    NSOpenGLContext *cocoa_context = macdrv_context_get_cocoa(context);
     CGLContextObj cgl = macdrv_opengl_context_cgl(cocoa_context);
     CGLError err;
 
@@ -1974,7 +1974,7 @@ static void macdrv_glCopyPixels(GLint x, GLint y, GLsizei width, GLsizei height,
 static void macdrv_surface_flush(struct opengl_drawable *base, UINT flags)
 {
     struct macdrv_context *context = macdrv_context_from_opengl_context(NtCurrentTeb()->glReserved2);
-    WineOpenGLContext *cocoa_context = macdrv_context_get_cocoa(context);
+    NSOpenGLContext *cocoa_context = macdrv_context_get_cocoa(context);
 
     TRACE("%s flags %#x\n", debugstr_opengl_drawable(base), flags);
 
@@ -2038,7 +2038,7 @@ static void macdrv_glReadPixels(GLint x, GLint y, GLsizei width, GLsizei height,
 static UINT macdrv_pbuffer_bind(HDC hdc, struct opengl_drawable *base, GLenum source)
 {
     struct macdrv_context *context = macdrv_context_from_opengl_context(NtCurrentTeb()->glReserved2);
-    WineOpenGLContext *cocoa_context = macdrv_context_get_cocoa(context);
+    NSOpenGLContext *cocoa_context = macdrv_context_get_cocoa(context);
     CGLContextObj cgl = macdrv_opengl_context_cgl(cocoa_context);
     struct gl_drawable *gl = impl_from_opengl_drawable(base);
     CGLPBufferObj pbuffer = gl->pbuffer;
@@ -2067,7 +2067,7 @@ static UINT macdrv_pbuffer_bind(HDC hdc, struct opengl_drawable *base, GLenum so
 static struct opengl_context *macdrv_context_create(int format, struct opengl_context *share, const int *attrib_list, BOOL *shared)
 {
     struct macdrv_context *context, *share_context = share ? macdrv_context_from_opengl_context(share) : NULL;
-    WineOpenGLContext *cocoa_share = macdrv_context_get_cocoa(share_context);
+    NSOpenGLContext *cocoa_share = macdrv_context_get_cocoa(share_context);
     const int *iptr;
     int major = 1, minor = 0, profile = WGL_CONTEXT_CORE_PROFILE_BIT_ARB, flags = 0;
     BOOL core = FALSE;
@@ -2229,7 +2229,7 @@ static void macdrv_pbuffer_destroy(struct opengl_drawable *base)
 static BOOL macdrv_context_activate(struct opengl_context *base, struct opengl_drawable *draw, struct opengl_drawable *read)
 {
     struct macdrv_context *context = macdrv_context_from_opengl_context(base);
-    WineOpenGLContext *cocoa_context = macdrv_context_get_cocoa(context);
+    NSOpenGLContext *cocoa_context = macdrv_context_get_cocoa(context);
     CGLContextObj cgl = macdrv_opengl_context_cgl(cocoa_context);
 
     TRACE("context %s, draw %s, read %s\n", debugstr_macdrv_context(context), debugstr_opengl_drawable(draw), debugstr_opengl_drawable(read));
@@ -2251,7 +2251,7 @@ static BOOL macdrv_wglQueryCurrentRendererIntegerWINE(GLenum attribute, GLuint *
 {
     BOOL ret = FALSE;
     struct macdrv_context *context = macdrv_context_from_opengl_context(NtCurrentTeb()->glReserved2);
-    WineOpenGLContext *cocoa_context = macdrv_context_get_cocoa(context);
+    NSOpenGLContext *cocoa_context = macdrv_context_get_cocoa(context);
     CGLContextObj cgl = macdrv_opengl_context_cgl(cocoa_context);
     CGLPixelFormatObj pixel_format;
     CGLError err;
@@ -2714,7 +2714,7 @@ static BOOL macdrv_describe_pixel_format(int format, struct wgl_pixel_format *de
 static BOOL macdrv_context_destroy(struct opengl_context *base)
 {
     struct macdrv_context *context = macdrv_context_from_opengl_context(base);
-    WineOpenGLContext *cocoa_context = macdrv_context_get_cocoa(context);
+    NSOpenGLContext *cocoa_context = macdrv_context_get_cocoa(context);
 
     TRACE("deleting context %s\n", debugstr_macdrv_context(context));
     macdrv_dispose_opengl_context(cocoa_context);
@@ -2741,7 +2741,7 @@ static void *macdrv_get_proc_address(const char *name)
 static BOOL macdrv_surface_swap(struct opengl_drawable *base)
 {
     struct macdrv_context *context = macdrv_context_from_opengl_context(NtCurrentTeb()->glReserved2);
-    WineOpenGLContext *cocoa_context = macdrv_context_get_cocoa(context);
+    NSOpenGLContext *cocoa_context = macdrv_context_get_cocoa(context);
 
     TRACE("%s context %s\n", debugstr_opengl_drawable(base), debugstr_macdrv_context(context));
 
