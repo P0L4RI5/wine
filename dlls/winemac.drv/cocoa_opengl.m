@@ -208,6 +208,11 @@ WineOpenGLContext *macdrv_create_opengl_context(void* cglctx)
 }
 }
 
+CGLContextObj macdrv_opengl_context_cgl(WineOpenGLContext *context)
+{
+    return context.CGLContextObj;
+}
+
 /***********************************************************************
  *              macdrv_dispose_opengl_context
  *

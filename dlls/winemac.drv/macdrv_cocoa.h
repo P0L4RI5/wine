@@ -135,6 +135,8 @@ DECLARE_PROTO(MTLDevice);
 DECLARE_PROTO(WineMetalSwapChain);
 #undef DECLARE_INTERFACE
 
+typedef struct _CGLContextObject *CGLContextObj;
+
 struct macdrv_event;
 struct macdrv_query;
 
@@ -603,6 +605,7 @@ extern int macdrv_set_pasteboard_data(CFStringRef type, CFDataRef data, WineWind
 
 /* opengl */
 extern WineOpenGLContext *macdrv_create_opengl_context(void* cglctx);
+extern CGLContextObj macdrv_opengl_context_cgl(WineOpenGLContext *context);
 extern void macdrv_dispose_opengl_context(WineOpenGLContext *context);
 extern void macdrv_make_context_current(WineOpenGLContext *context, WineContentView *view, CGRect r);
 extern void macdrv_update_opengl_context(WineOpenGLContext *context);
