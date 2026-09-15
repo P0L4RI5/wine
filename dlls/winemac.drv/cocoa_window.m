@@ -31,7 +31,6 @@
 #include "macdrv_cocoa.h"
 #import "cocoa_app.h"
 #import "cocoa_event.h"
-#import "cocoa_opengl.h"
 
 #pragma GCC diagnostic ignored "-Wdeclaration-after-statement"
 
@@ -240,29 +239,12 @@ static inline BOOL stage_manager_enabled(void)
     IOSurface* _ioSurface;
     BOOL _hasShape;
 
-    NSMutableArray* glContexts;
-    NSMutableArray* pendingGlContexts;
-    BOOL _everHadGLContext;
-    BOOL _cachedHasGLDescendant;
-    BOOL _cachedHasGLDescendantValid;
-
     NSMutableAttributedString* markedText;
     NSRange markedTextSelection;
-
-    int backingSize[2];
 
     WineMetalView *_metalView;
     NSMutableDictionary<NSNumber*, CALayerHost*>* _caLayerHosts;
 }
-
-@property (readonly, nonatomic) BOOL everHadGLContext;
-
-    - (void) addGLContext:(WineOpenGLContext*)context;
-    - (void) removeGLContext:(WineOpenGLContext*)context;
-    - (void) updateGLContexts;
-
-    - (void) wine_getBackingSize:(int*)outBackingSize;
-    - (void) wine_setBackingSize:(const int*)newBackingSize;
 
     - (WineMetalView*) newMetalViewWithDevice:(id<MTLDevice>)device;
     - (void) addCALayerHostViewWithContextId:(CAContextID)contextId;
@@ -357,8 +339,6 @@ static inline BOOL stage_manager_enabled(void)
 
 @implementation WineContentView
 
-@synthesize everHadGLContext = _everHadGLContext;
-
     - (instancetype) initWithFrame:(NSRect)frame
     {
         self = [super initWithFrame:frame];
@@ -375,8 +355,6 @@ static inline BOOL stage_manager_enabled(void)
     - (void) dealloc
     {
         [markedText release];
-        [glContexts release];
-        [pendingGlContexts release];
         [_caLayerHosts release];
         [_ioSurface release];
         [super dealloc];
@@ -389,7 +367,7 @@ static inline BOOL stage_manager_enabled(void)
 
     - (BOOL) wantsUpdateLayer
     {
-        return YES /*!_everHadGLContext*/;
+        return YES;
     }
 
     - (void) updateLayer
@@ -437,115 +415,6 @@ static inline BOOL stage_manager_enabled(void)
     - (BOOL) hasShape
     {
         return _hasShape;
-    }
-
-    - (void) viewWillDraw
-    {
-        [super viewWillDraw];
-
-        for (WineOpenGLContext* context in pendingGlContexts)
-        {
-            context.needsUpdate = TRUE;
-            macdrv_update_opengl_context(context);
-        }
-        [glContexts addObjectsFromArray:pendingGlContexts];
-        [pendingGlContexts removeAllObjects];
-    }
-
-    - (void) addGLContext:(WineOpenGLContext*)context
-    {
-        BOOL hadContext = _everHadGLContext;
-        if (!glContexts)
-            glContexts = [[NSMutableArray alloc] init];
-        if (!pendingGlContexts)
-            pendingGlContexts = [[NSMutableArray alloc] init];
-
-        if ([[self window] windowNumber] > 0 && !NSIsEmptyRect([self visibleRect]))
-        {
-            [glContexts addObject:context];
-            context.needsUpdate = TRUE;
-        }
-        else
-        {
-            [pendingGlContexts addObject:context];
-            [self setNeedsDisplay:YES];
-        }
-
-        _everHadGLContext = YES;
-        if (!hadContext)
-            [self invalidateHasGLDescendant];
-        [(WineWindow*)[self window] updateForGLSubviews];
-    }
-
-    - (void) removeGLContext:(WineOpenGLContext*)context
-    {
-        [glContexts removeObjectIdenticalTo:context];
-        [pendingGlContexts removeObjectIdenticalTo:context];
-        [(WineWindow*)[self window] updateForGLSubviews];
-    }
-
-    - (void) updateGLContexts:(BOOL)reattach
-    {
-        for (WineOpenGLContext* context in glContexts)
-        {
-            context.needsUpdate = TRUE;
-            if (reattach)
-                context.needsReattach = TRUE;
-        }
-    }
-
-    - (void) updateGLContexts
-    {
-        [self updateGLContexts:NO];
-    }
-
-    - (BOOL) _hasGLDescendant
-    {
-        if ([self isHidden])
-            return NO;
-        if (_everHadGLContext)
-            return YES;
-        for (WineContentView* view in [self subviews])
-        {
-            if ([view isKindOfClass:[WineContentView class]] && [view hasGLDescendant])
-                return YES;
-        }
-        return NO;
-    }
-
-    - (BOOL) hasGLDescendant
-    {
-        if (!_cachedHasGLDescendantValid)
-        {
-            _cachedHasGLDescendant = [self _hasGLDescendant];
-            _cachedHasGLDescendantValid = YES;
-        }
-        return _cachedHasGLDescendant;
-    }
-
-    - (void) invalidateHasGLDescendant
-    {
-        BOOL invalidateAncestors = _cachedHasGLDescendantValid;
-        _cachedHasGLDescendantValid = NO;
-        if (invalidateAncestors && self != [[self window] contentView])
-        {
-            WineContentView* superview = (WineContentView*)[self superview];
-            if ([superview isKindOfClass:[WineContentView class]])
-                [superview invalidateHasGLDescendant];
-        }
-    }
-
-    - (void) wine_getBackingSize:(int*)outBackingSize
-    {
-        @synchronized(self) {
-            memcpy(outBackingSize, backingSize, sizeof(backingSize));
-        }
-    }
-    - (void) wine_setBackingSize:(const int*)newBackingSize
-    {
-        @synchronized(self) {
-            memcpy(backingSize, newBackingSize, sizeof(backingSize));
-        }
     }
 
     - (WineMetalView*) newMetalViewWithDevice:(id<MTLDevice>)device
@@ -626,7 +495,6 @@ static inline BOOL stage_manager_enabled(void)
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
         [self setWantsBestResolutionOpenGLSurface:mode];
 #pragma clang diagnostic pop
-        [self updateGLContexts];
         [self setLayerRetinaProperties:mode];
 
         for (CALayerHost* host in [_caLayerHosts allValues])
@@ -653,19 +521,6 @@ static inline BOOL stage_manager_enabled(void)
         return YES;
     }
 
-    - (void) viewDidHide
-    {
-        [super viewDidHide];
-        [self invalidateHasGLDescendant];
-    }
-
-    - (void) viewDidUnhide
-    {
-        [super viewDidUnhide];
-        [self updateGLContexts:YES];
-        [self invalidateHasGLDescendant];
-    }
-
     - (void) clearMarkedText
     {
         [markedText deleteCharactersInRange:NSMakeRange(0, [markedText length])];
@@ -690,25 +545,8 @@ static inline BOOL stage_manager_enabled(void)
         [self clearMarkedText];
     }
 
-    - (void) didAddSubview:(NSView*)subview
-    {
-        if ([subview isKindOfClass:[WineContentView class]])
-        {
-            WineContentView* view = (WineContentView*)subview;
-            if (!view->_cachedHasGLDescendantValid || view->_cachedHasGLDescendant)
-                [self invalidateHasGLDescendant];
-        }
-        [super didAddSubview:subview];
-    }
-
     - (void) willRemoveSubview:(NSView*)subview
     {
-        if ([subview isKindOfClass:[WineContentView class]])
-        {
-            WineContentView* view = (WineContentView*)subview;
-            if (!view->_cachedHasGLDescendantValid || view->_cachedHasGLDescendant)
-                [self invalidateHasGLDescendant];
-        }
         if (subview == _metalView)
             _metalView = nil;
         [super willRemoveSubview:subview];
@@ -717,7 +555,6 @@ static inline BOOL stage_manager_enabled(void)
     - (void) setLayer:(CALayer*)newLayer
     {
         [super setLayer:newLayer];
-        [self updateGLContexts];
     }
 
     /*
@@ -1938,8 +1775,7 @@ static inline BOOL stage_manager_enabled(void)
     - (BOOL) needsTransparency
     {
         WineContentView *view = self.contentView;
-        return self.contentView.layer.mask || [view hasShape] || self.usePerPixelAlpha ||
-                (gl_surface_mode == GL_SURFACE_BEHIND && [view hasGLDescendant]);
+        return self.contentView.layer.mask || [view hasShape] || self.usePerPixelAlpha;
     }
 
     - (void) checkTransparency
@@ -3529,18 +3365,6 @@ WineContentView *macdrv_create_view(CGRect rect)
         view = [[WineContentView alloc] initWithFrame:NSRectFromCGRect(cgrect_mac_from_win(rect))];
         [view setAutoresizingMask:NSViewNotSizable];
         [view setHidden:YES];
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wdeprecated-declarations"
-        [view setWantsBestResolutionOpenGLSurface:retina_on];
-        [nc addObserver:view
-               selector:@selector(updateGLContexts)
-                   name:NSViewGlobalFrameDidChangeNotification
-                 object:view];
-#pragma clang diagnostic pop
-        [nc addObserver:view
-               selector:@selector(updateGLContexts)
-                   name:WineDisplayConfigurationChangedNotification
-                 object:NSApp];
     });
 
     return view;
@@ -3599,7 +3423,6 @@ void macdrv_set_view_frame(WineContentView *view, CGRect rect)
             else
                 [view setFrame:newFrame];
             [view setNeedsDisplay:YES];
-            [view wine_setBackingSize:(int[2]){ 0 }];
             [(WineWindow*)[view window] updateForGLSubviews];
         }
     });
@@ -3663,36 +3486,6 @@ void macdrv_set_view_hidden(WineContentView *view, bool hidden)
     OnMainThreadAsync(^{
         [view setHidden:hidden];
         [(WineWindow*)view.window updateForGLSubviews];
-    });
-}
-}
-
-/***********************************************************************
- *              macdrv_add_view_opengl_context
- *
- * Add an OpenGL context to the list being tracked for each view.
- */
-void macdrv_add_view_opengl_context(WineContentView *view, WineOpenGLContext *context)
-{
-@autoreleasepool
-{
-    OnMainThread(^{
-        [view addGLContext:context];
-    });
-}
-}
-
-/***********************************************************************
- *              macdrv_remove_view_opengl_context
- *
- * Add an OpenGL context to the list being tracked for each view.
- */
-void macdrv_remove_view_opengl_context(WineContentView *view, WineOpenGLContext *context)
-{
-@autoreleasepool
-{
-    OnMainThreadAsync(^{
-        [view removeGLContext:context];
     });
 }
 }
@@ -3929,21 +3722,6 @@ void macdrv_window_release_ca_layer_host_view(WineWindow *window, unsigned int c
             [(WineContentView*)content_view removeCALayerHostView:context_id];
     });
 }
-}
-
-bool macdrv_get_view_backing_size(WineContentView *view, int backing_size[2])
-{
-    if (![view isKindOfClass:[WineContentView class]])
-        return false;
-
-    [view wine_getBackingSize:backing_size];
-    return true;
-}
-
-void macdrv_set_view_backing_size(WineContentView *view, const int backing_size[2])
-{
-    if ([view isKindOfClass:[WineContentView class]])
-        [view wine_setBackingSize:backing_size];
 }
 
 /***********************************************************************
