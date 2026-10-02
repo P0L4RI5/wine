@@ -11530,6 +11530,53 @@ static LRESULT WINAPI PrintWindowProcA(HWND hwnd, UINT message, WPARAM wp, LPARA
     return lr;
 }
 
+static BOOL restore_from_minimized_test;
+
+static LRESULT WINAPI RestoreFromMinimizedWindowProcA(HWND hwnd, UINT message, WPARAM wp, LPARAM lp)
+{
+    static LONG defwndproc_counter = 0;
+    struct recvd_message msg;
+    LRESULT lr;
+
+    if (restore_from_minimized_test && (message == WM_ACTIVATEAPP
+        || message == WM_NCACTIVATE
+        || message == WM_ACTIVATE))
+    {
+        msg.hwnd = hwnd;
+        msg.message = message;
+        msg.flags = sent | wparam | lparam;
+        if (defwndproc_counter)
+            msg.flags |= defwinproc;
+        msg.wParam = wp;
+        msg.lParam = lp;
+        msg.descr = "RestoreFromMinimizedWindowProcA";
+        add_message(&msg);
+    }
+
+    switch (message)
+    {
+    case WM_ACTIVATEAPP:
+    case WM_NCACTIVATE:
+    case WM_ACTIVATE:
+        if (restore_from_minimized_test)
+            todo_wine_if(hwnd != GetForegroundWindow())
+            ok(hwnd == GetForegroundWindow(), "Got unexpected foreground window, msg %#x.\n", message);
+        break;
+    case WM_SYSCOMMAND:
+        if ((wp & 0xfff0) == SC_RESTORE)
+        {
+            restore_from_minimized_test = 0;
+            PostQuitMessage(0);
+        }
+        break;
+    }
+
+    defwndproc_counter++;
+    lr = DefWindowProcA(hwnd, message, wp, lp);
+    defwndproc_counter--;
+    return lr;
+}
+
 static void register_classes(void)
 {
     WNDCLASSA cls;
@@ -11589,6 +11636,10 @@ static void register_classes(void)
 
     cls.lpfnWndProc = PrintWindowProcA;
     cls.lpszClassName = "PrintWindowClass";
+    register_class(&cls);
+
+    cls.lpfnWndProc = RestoreFromMinimizedWindowProcA;
+    cls.lpszClassName = "RestoreFromMinimizedWindowClass";
     register_class(&cls);
 
     cls.style = CS_NOCLOSE;
@@ -21839,6 +21890,61 @@ static void test_PrintWindow(char **argv)
     DeleteObject(green_brush);
 }
 
+static const struct message restore_from_minimized[] =
+{
+    { WM_ACTIVATEAPP, sent|wparam, 1, 0 },
+    { WM_NCACTIVATE, sent|wparam, MAKEWPARAM(WA_ACTIVE, 0x20), 0 },
+    { WM_ACTIVATE, sent|wparam, MAKEWPARAM(WA_ACTIVE, 0x20), 0 },
+    { 0 }
+};
+
+static DWORD WINAPI restore_from_minimized_thread_proc(void *param)
+{
+    HANDLE event = param;
+    HWND hwnd;
+    MSG msg;
+
+    hwnd = CreateWindowA("RestoreFromMinimizedWindowClass", "test", WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+                         100, 100, 100, 100, 0, 0, 0, NULL);
+    ok(!!hwnd, "CreateWindowA failed, error %lu.\n", GetLastError());
+    ShowWindow(hwnd, SW_MINIMIZE);
+    flush_events();
+    flush_sequence();
+
+    restore_from_minimized_test = 1;
+    SetEvent(event);
+
+    while (GetMessageA(&msg, 0, 0, 0))
+    {
+        TranslateMessage(&msg);
+        DispatchMessageA(&msg);
+    }
+
+    DestroyWindow(hwnd);
+    return 0;
+}
+
+static void test_restore_from_minimized(void)
+{
+    HANDLE event, thread;
+
+    if (!winetest_interactive)
+        return;
+
+    event = CreateEventW(NULL, 0, 0, NULL);
+    thread = CreateThread(NULL, 0, restore_from_minimized_thread_proc, event, 0, NULL);
+    ok(thread != NULL, "CreateThread failed, error %ld.\n", GetLastError());
+    ok(WaitForSingleObject(event, INFINITE) == WAIT_OBJECT_0, "WaitForSingleObject failed.\n");
+    CloseHandle(event);
+
+    printf("Click the window icon on the taskbar to restore the window from the minimized state.\n");
+    ok(WaitForSingleObject(thread, INFINITE) == WAIT_OBJECT_0, "WaitForSingleObject failed.\n");
+    CloseHandle(thread);
+
+    ok_sequence(restore_from_minimized, "Restore from minimized", TRUE);
+    flush_sequence();
+}
+
 START_TEST(msg)
 {
     char **test_argv;
@@ -21977,6 +22083,7 @@ START_TEST(msg)
     test_hook_changing_window_proc();
     test_hook_cleanup();
     test_PrintWindow(test_argv);
+    test_restore_from_minimized();
     /* keep it the last test, under Windows it tends to break the tests
      * which rely on active/foreground windows being correct.
      */
