@@ -1609,6 +1609,7 @@ static unsigned int check_sharing( struct fd *fd, unsigned int access, unsigned 
 void set_fd_events( struct fd *fd, int events )
 {
     int user = fd->poll_index;
+    if (user == -1) return;
     assert( poll_users[user] == fd );
 
     set_fd_epoll_events( fd, user, events );
