@@ -820,6 +820,28 @@ static DWORD get_service_binary_path(const struct service_entry *service_entry, 
     return ERROR_SUCCESS;
 }
 
+static BOOL get_binary_type(WCHAR *path, DWORD *type)
+{
+    BOOL ret = FALSE;
+    WCHAR *relative_path;
+
+    /* Absolute paths */
+    if (GetBinaryTypeW(path, type))
+        return TRUE;
+
+    /* Relative paths:
+     * Current directory of services.exe is c:\windows\system32 and drivers
+     * configured with a relative path start with system32 already,
+     * therefore add a prefix "..\\". */
+    if (!(relative_path = malloc(wcslen(path) * sizeof(WCHAR) + sizeof(L"..\\"))))
+        return FALSE;
+    lstrcpyW(relative_path, L"..\\");
+    lstrcatW(relative_path, path);
+    ret = GetBinaryTypeW(relative_path, type);
+    free(relative_path);
+    return ret;
+}
+
 static DWORD get_winedevice_binary_path(struct service_entry *service_entry, WCHAR **path, BOOL *is_wow64)
 {
     WCHAR system_dir[MAX_PATH];
@@ -827,7 +849,7 @@ static DWORD get_winedevice_binary_path(struct service_entry *service_entry, WCH
 
     if (!is_win64)
         *is_wow64 = FALSE;
-    else if (GetBinaryTypeW(*path, &type))
+    else if (get_binary_type(*path, &type))
         *is_wow64 = (type == SCS_32BIT_BINARY);
     else
         *is_wow64 = service_entry->is_wow64;
