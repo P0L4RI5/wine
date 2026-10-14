@@ -4248,6 +4248,7 @@ enum inproc_sync_type
 @REQ(d3dkmt_object_create)
     unsigned int        type;           /* d3dkmt object type */
     int                 fd;             /* host specific fd */
+    struct fd_desc      fd_desc;        /* fd-specific metadata, defined in ntuser.h */
     unsigned __int64    value;          /* initial value for keyed mutex */
     VARARG(runtime,bytes);              /* client runtime data */
 @REPLY
@@ -4282,6 +4283,7 @@ enum inproc_sync_type
 @REPLY
     d3dkmt_handle_t     global;         /* global d3dkmt handle */
     obj_handle_t        handle;         /* internal handle of the server object */
+    struct fd_desc      fd_desc;        /* fd-specific metadata, defined in ntuser.h */
     data_size_t         runtime_size;   /* size of client runtime data */
     VARARG(runtime,bytes);              /* client runtime data */
 @END

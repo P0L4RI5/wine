@@ -6093,6 +6093,7 @@ struct d3dkmt_object_create_request
     unsigned int        type;
     int                 fd;
     char __pad_20[4];
+    struct fd_desc      fd_desc;
     unsigned __int64    value;
     /* VARARG(runtime,bytes); */
 };
@@ -6148,9 +6149,10 @@ struct d3dkmt_object_open_reply
     struct reply_header __header;
     d3dkmt_handle_t     global;
     obj_handle_t        handle;
+    struct fd_desc      fd_desc;
     data_size_t         runtime_size;
     /* VARARG(runtime,bytes); */
-    char __pad_20[4];
+    char __pad_44[4];
 };
 
 
@@ -7223,6 +7225,6 @@ union generic_reply
     struct alpc_create_port_reply alpc_create_port_reply;
 };
 
-#define SERVER_PROTOCOL_VERSION 976
+#define SERVER_PROTOCOL_VERSION 977
 
 #endif /* __WINE_WINE_SERVER_PROTOCOL_H */

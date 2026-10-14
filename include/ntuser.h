@@ -34,6 +34,20 @@
 # endif
 #endif
 
+/* D3DKMT object fd descriptor, exposed to and used by third-party libraries */
+struct fd_desc
+{
+#define FD_DESC_VERSION 1               /* increment when changing fd_desc */
+    unsigned short      version;        /* version == FD_DESC_VERSION */
+    unsigned short      type;           /* fd type, see below */
+};
+
+enum fd_type
+{
+    FD_NONE         = 0,                /* object has no fd */
+    FD_OPAQUE       = 1,                /* object uses Vulkan OPAQUE_FD */
+};
+
 /* avoid including shellscalingapi.h */
 typedef enum MONITOR_DPI_TYPE
 {
