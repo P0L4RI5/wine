@@ -2680,7 +2680,7 @@ static void test_D3DKMTCreateAllocation( void )
     status = D3DKMTQueryResourceInfo( &query );
     ok_nt( STATUS_SUCCESS, status );
     ok_x4( query.PrivateRuntimeDataSize, ==, sizeof(expect_runtime_data) );
-    todo_wine ok_x4( query.TotalPrivateDriverDataSize, >, 0 );
+    ok_x4( query.TotalPrivateDriverDataSize, >, 0 );
     ok_x4( query.TotalPrivateDriverDataSize, <, sizeof(driver_data) );
     ok_x4( query.ResourcePrivateDriverDataSize, ==, 0 );
     ok_u4( query.NumAllocations, ==, 1 );
@@ -2710,7 +2710,7 @@ static void test_D3DKMTCreateAllocation( void )
     ok_x4( open.hGlobalShare, ==, create.hGlobalShare );
     check_d3dkmt_local( open.hResource, &next_local );
     ok_x4( open.PrivateRuntimeDataSize, ==, sizeof(expect_runtime_data) );
-    todo_wine ok_x4( open.TotalPrivateDriverDataBufferSize, >, 0 );
+    ok_x4( open.TotalPrivateDriverDataBufferSize, >, 0 );
     ok_x4( open.TotalPrivateDriverDataBufferSize, <, sizeof(driver_data) );
     ok_x4( open.ResourcePrivateDriverDataSize, ==, 0 );
     ok_u4( open.NumAllocations, ==, 1 );
@@ -2718,7 +2718,7 @@ static void test_D3DKMTCreateAllocation( void )
     todo_wine ok_x4( open_alloc.PrivateDriverDataSize, >, 0 );
     ok_x4( open_alloc.PrivateDriverDataSize, <, sizeof(alloc_data) );
     ok( !memcmp( runtime_data, expect_runtime_data, sizeof(expect_runtime_data) ), "got data %#x\n", runtime_data[0] );
-    todo_wine ok_u1( driver_data[0], !=, 0xcd );
+    ok_u1( driver_data[0], !=, 0xcd );
     ok_u1( resource_data[0], ==, 0xcd );
     ok_u1( alloc_data[0], ==, 0xcd );
 
@@ -2753,7 +2753,7 @@ static void test_D3DKMTCreateAllocation( void )
     ok_x4( open.hGlobalShare, ==, create.hGlobalShare );
     check_d3dkmt_local( open.hResource, &next_local );
     ok_x4( open.PrivateRuntimeDataSize, ==, sizeof(expect_runtime_data) );
-    todo_wine ok_x4( open.TotalPrivateDriverDataBufferSize, >, 0 );
+    ok_x4( open.TotalPrivateDriverDataBufferSize, >, 0 );
     ok_x4( open.TotalPrivateDriverDataBufferSize, <, sizeof(driver_data) );
     ok_x4( open.ResourcePrivateDriverDataSize, ==, 0 );
     ok_u4( open.NumAllocations, ==, 1 );
@@ -3134,7 +3134,7 @@ static void test_D3DKMTShareObjects( void )
     status = D3DKMTQueryResourceInfoFromNtHandle( &query_resource );
     ok_nt( STATUS_SUCCESS, status );
     ok_x4( query_resource.PrivateRuntimeDataSize, ==, sizeof(expect_runtime_data) );
-    todo_wine ok_x4( query_resource.TotalPrivateDriverDataSize, >, 0 );
+    ok_x4( query_resource.TotalPrivateDriverDataSize, >, 0 );
     ok_x4( query_resource.TotalPrivateDriverDataSize, <, sizeof(driver_data) );
     ok_x4( query_resource.ResourcePrivateDriverDataSize, ==, 0 );
     ok_u4( query_resource.NumAllocations, ==, 1 );
@@ -3167,7 +3167,7 @@ static void test_D3DKMTShareObjects( void )
     ok_u4( open_resource.NumAllocations, ==, 1 );
     ok_x4( open_resource.PrivateRuntimeDataSize, ==, sizeof(expect_runtime_data) );
     ok_x4( open_resource.ResourcePrivateDriverDataSize, ==, 0 );
-    todo_wine ok_x4( open_resource.TotalPrivateDriverDataBufferSize, >, 0 );
+    ok_x4( open_resource.TotalPrivateDriverDataBufferSize, >, 0 );
     ok_x4( open_resource.TotalPrivateDriverDataBufferSize, <, sizeof(driver_data) );
     check_d3dkmt_local( open_resource.hResource, NULL );
     ok_x4( open_resource.hKeyedMutex, ==, 0 );
@@ -3177,7 +3177,7 @@ static void test_D3DKMTShareObjects( void )
     todo_wine ok_x4( open_alloc.PrivateDriverDataSize, >, 0 );
     ok_x4( open_alloc.PrivateDriverDataSize, <, sizeof(alloc_data) );
     ok( !memcmp( runtime_data, expect_runtime_data, sizeof(expect_runtime_data) ), "got data %#x\n", runtime_data[0] );
-    todo_wine ok_u1( driver_data[0], !=, 0xcd );
+    ok_u1( driver_data[0], !=, 0xcd );
 
     destroy_alloc.hResource = open_resource.hResource;
     status = D3DKMTDestroyAllocation( &destroy_alloc );
@@ -3300,7 +3300,7 @@ static void test_D3DKMTShareObjects( void )
     status = D3DKMTQueryResourceInfoFromNtHandle( &query_resource );
     ok_nt( STATUS_SUCCESS, status );
     ok_x4( query_resource.PrivateRuntimeDataSize, ==, sizeof(expect_runtime_data) );
-    todo_wine ok_x4( query_resource.TotalPrivateDriverDataSize, >, 0 );
+    ok_x4( query_resource.TotalPrivateDriverDataSize, >, 0 );
     ok_x4( query_resource.TotalPrivateDriverDataSize, <, sizeof(driver_data) );
     ok_x4( query_resource.ResourcePrivateDriverDataSize, ==, 0 );
     ok_u4( query_resource.NumAllocations, ==, 1 );
@@ -3333,7 +3333,7 @@ static void test_D3DKMTShareObjects( void )
     ok_u4( open_resource.NumAllocations, ==, 1 );
     ok_x4( open_resource.PrivateRuntimeDataSize, ==, sizeof(expect_runtime_data) );
     ok_x4( open_resource.ResourcePrivateDriverDataSize, ==, 0 );
-    todo_wine ok_x4( open_resource.TotalPrivateDriverDataBufferSize, >, 0 );
+    ok_x4( open_resource.TotalPrivateDriverDataBufferSize, >, 0 );
     ok_x4( open_resource.TotalPrivateDriverDataBufferSize, <, sizeof(driver_data) );
     check_d3dkmt_local( open_resource.hResource, NULL );
     check_d3dkmt_local( open_resource.hKeyedMutex, NULL );

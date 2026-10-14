@@ -3389,6 +3389,7 @@ static void import_memory( GLuint memory, GLuint64 size, GLenum type, void *hand
 {
     const struct opengl_funcs *funcs = &display_funcs;
     D3DKMT_HANDLE local, mutex, sync;
+    struct fd_desc desc;
     GLenum err;
     int fd;
 
@@ -3404,7 +3405,7 @@ static void import_memory( GLuint memory, GLuint64 size, GLenum type, void *hand
     }
     if (mutex) d3dkmt_destroy_mutex( mutex );
     if (sync) d3dkmt_destroy_sync( sync );
-    fd = d3dkmt_object_get_fd( local );
+    fd = d3dkmt_object_get_fd( local, &desc );
     d3dkmt_destroy_resource( local );
     if (fd < 0) return set_gl_error( GL_INVALID_VALUE );
 
@@ -3443,6 +3444,7 @@ static void import_semaphore( GLuint semaphore, GLenum type, void *handle )
 {
     const struct opengl_funcs *funcs = &display_funcs;
     D3DKMT_HANDLE local;
+    struct fd_desc desc;
     GLenum err;
     int fd;
 
@@ -3456,7 +3458,7 @@ static void import_semaphore( GLuint semaphore, GLenum type, void *handle )
         break;
     default: return set_gl_error( GL_INVALID_ENUM );
     }
-    fd = d3dkmt_object_get_fd( local );
+    fd = d3dkmt_object_get_fd( local, &desc );
     d3dkmt_destroy_sync( local );
     if (fd < 0) return set_gl_error( GL_INVALID_VALUE );
 
@@ -3716,6 +3718,7 @@ static void free_opengl_swapchain( struct opengl_swapchain *swapchain )
 
 D3DKMT_HANDLE create_opengl_swapchain( HWND toplevel, HWND hwnd )
 {
+    static const struct fd_desc no_fd = { .version = FD_DESC_VERSION };
     struct opengl_swapchain *swapchain;
     D3DKMT_HANDLE resources[3], global;
     const struct opengl_funcs *funcs;
@@ -3741,7 +3744,7 @@ D3DKMT_HANDLE create_opengl_swapchain( HWND toplevel, HWND hwnd )
 
     for (UINT i = 0; i < ARRAY_SIZE(resources); i++)
     {
-        resources[i] = d3dkmt_create_resource( -1, &global );
+        resources[i] = d3dkmt_create_resource( -1, no_fd, &global );
         if (!resources[i]) goto failed;
     }
 
