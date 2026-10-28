@@ -37,15 +37,26 @@
 /* D3DKMT object fd descriptor, exposed to and used by third-party libraries */
 struct fd_desc
 {
-#define FD_DESC_VERSION 1               /* increment when changing fd_desc */
+#define FD_DESC_VERSION 2               /* increment when changing fd_desc */
     unsigned short      version;        /* version == FD_DESC_VERSION */
     unsigned short      type;           /* fd type, see below */
+    int                 format;         /* DMA-BUF fourcc */
+    union
+    {
+        struct
+        {
+            unsigned __int64 modifier;  /* DRM format modifier */
+            int offset;                 /* plane #0 offset */
+            int stride;                 /* plane #0 stride */
+        } dma_buf;
+    };
 };
 
 enum fd_type
 {
     FD_NONE         = 0,                /* object has no fd */
     FD_OPAQUE       = 1,                /* object uses Vulkan OPAQUE_FD */
+    FD_DMA_BUF      = 2,                /* object uses Linux DMA-BUF fd */
 };
 
 /* avoid including shellscalingapi.h */
