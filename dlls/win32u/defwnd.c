@@ -272,13 +272,6 @@ BOOL adjust_window_rect( RECT *rect, DWORD style, BOOL menu, DWORD ex_style, UIN
 
     InflateRect( rect, adjust, adjust );
 
-    if ((style & WS_CAPTION) == WS_CAPTION)
-    {
-        if (ex_style & WS_EX_TOOLWINDOW)
-            rect->top -= ncm.iSmCaptionHeight + 1;
-        else
-            rect->top -= ncm.iCaptionHeight + 1;
-    }
     if (menu) rect->top -= ncm.iMenuHeight + 1;
 
     if (ex_style & WS_EX_CLIENTEDGE)
@@ -1769,23 +1762,6 @@ static void nc_paint( HWND hwnd, HRGN clip )
 
     draw_nc_frame( hdc, &rect, active, style, ex_style );
 
-    if ((style & WS_CAPTION) == WS_CAPTION)
-    {
-        RECT r = rect;
-        if (ex_style & WS_EX_TOOLWINDOW)
-        {
-            r.bottom = rect.top + get_system_metrics( SM_CYSMCAPTION );
-            rect.top += get_system_metrics( SM_CYSMCAPTION );
-        }
-        else {
-            r.bottom = rect.top + get_system_metrics( SM_CYCAPTION );
-            rect.top += get_system_metrics( SM_CYCAPTION );
-        }
-
-        if (intersect_rect( &rfuzz, &r, &clip_rect ))
-            draw_nc_caption( hdc, &r, hwnd, style, ex_style, active );
-    }
-
     if (has_menu( hwnd, style ))
     {
         RECT r = rect;
@@ -1982,76 +1958,6 @@ LRESULT handle_nc_hit_test( HWND hwnd, POINT pt )
             InflateRect(&rects.window, -get_system_metrics( SM_CXBORDER ),
                         -get_system_metrics( SM_CYBORDER ));
         if (!PtInRect( &rects.window, pt )) return HTBORDER;
-    }
-
-    /* Check caption */
-    if ((style & WS_CAPTION) == WS_CAPTION)
-    {
-        if (ex_style & WS_EX_TOOLWINDOW)
-            rects.window.top += get_system_metrics( SM_CYSMCAPTION ) - 1;
-        else
-            rects.window.top += get_system_metrics( SM_CYCAPTION ) - 1;
-        if (!PtInRect( &rects.window, pt ))
-        {
-            BOOL min_or_max_box = (style & WS_SYSMENU) && (style & (WS_MINIMIZEBOX | WS_MAXIMIZEBOX));
-            if (ex_style & WS_EX_LAYOUTRTL)
-            {
-                /* Check system menu */
-                if ((style & WS_SYSMENU) && !(ex_style & WS_EX_TOOLWINDOW) &&
-                    get_nc_icon_for_window( hwnd ))
-                {
-                    rects.window.right -= get_system_metrics( SM_CYCAPTION ) - 1;
-                    if (pt.x > rects.window.right) return HTSYSMENU;
-                }
-
-                /* Check close button */
-                if (style & WS_SYSMENU)
-                {
-                    rects.window.left += get_system_metrics( SM_CYCAPTION );
-                    if (pt.x < rects.window.left) return HTCLOSE;
-                }
-
-                if (min_or_max_box && !(ex_style & WS_EX_TOOLWINDOW))
-                {
-                    /* Check maximize box */
-                    rects.window.left += get_system_metrics( SM_CXSIZE );
-                    if (pt.x < rects.window.left) return HTMAXBUTTON;
-
-                    /* Check minimize box */
-                    rects.window.left += get_system_metrics( SM_CXSIZE );
-                    if (pt.x < rects.window.left) return HTMINBUTTON;
-                }
-            }
-            else
-            {
-                /* Check system menu */
-                if ((style & WS_SYSMENU) && !(ex_style & WS_EX_TOOLWINDOW) &&
-                    get_nc_icon_for_window( hwnd ))
-                {
-                    rects.window.left += get_system_metrics( SM_CYCAPTION ) - 1;
-                    if (pt.x < rects.window.left) return HTSYSMENU;
-                }
-
-                /* Check close button */
-                if (style & WS_SYSMENU)
-                {
-                    rects.window.right -= get_system_metrics( SM_CYCAPTION );
-                    if (pt.x > rects.window.right) return HTCLOSE;
-                }
-
-                if (min_or_max_box && !(ex_style & WS_EX_TOOLWINDOW))
-                {
-                    /* Check maximize box */
-                    rects.window.right -= get_system_metrics( SM_CXSIZE );
-                    if (pt.x > rects.window.right) return HTMAXBUTTON;
-
-                    /* Check minimize box */
-                    rects.window.right -= get_system_metrics( SM_CXSIZE );
-                    if (pt.x > rects.window.right) return HTMINBUTTON;
-                }
-            }
-            return HTCAPTION;
-        }
     }
 
     /* Check menu bar */
@@ -2625,8 +2531,6 @@ LRESULT default_window_proc( HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam, 
         result = set_window_text( hwnd, (void *)lparam, ansi );
         if (result)
             NtUserNotifyWinEvent( EVENT_OBJECT_NAMECHANGE, hwnd, OBJID_WINDOW, CHILDID_SELF );
-        if (result && (get_window_long( hwnd, GWL_STYLE ) & WS_CAPTION) == WS_CAPTION)
-            handle_nc_paint( hwnd , (HRGN)1 );  /* repaint caption */
         break;
 
     case WM_GETTEXTLENGTH:
@@ -2679,8 +2583,6 @@ LRESULT default_window_proc( HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam, 
 
     case WM_SETICON:
         result = (LRESULT)set_window_icon( hwnd, wparam, (HICON)lparam );
-        if ((get_window_long( hwnd, GWL_STYLE ) & WS_CAPTION) == WS_CAPTION)
-            handle_nc_paint( hwnd , (HRGN)1 );  /* repaint caption */
         break;
 
     case WM_GETICON:
@@ -3125,33 +3027,6 @@ BOOL WINAPI NtUserGetTitleBarInfo( HWND hwnd, TITLEBARINFO *info )
 
     if (style & WS_CAPTION)
     {
-        info->rgstate[1] = STATE_SYSTEM_INVISIBLE;
-        if (style & WS_SYSMENU)
-        {
-            if (!(style & (WS_MINIMIZEBOX|WS_MAXIMIZEBOX)))
-            {
-                info->rgstate[2] = STATE_SYSTEM_INVISIBLE;
-                info->rgstate[3] = STATE_SYSTEM_INVISIBLE;
-            }
-            else
-            {
-                if (!(style & WS_MINIMIZEBOX))
-                    info->rgstate[2] = STATE_SYSTEM_UNAVAILABLE;
-                if (!(style & WS_MAXIMIZEBOX))
-                    info->rgstate[3] = STATE_SYSTEM_UNAVAILABLE;
-            }
-            if (!(ex_style & WS_EX_CONTEXTHELP))
-                info->rgstate[4] = STATE_SYSTEM_INVISIBLE;
-            if (get_class_long( hwnd, GCL_STYLE, FALSE ) & CS_NOCLOSE )
-                info->rgstate[5] = STATE_SYSTEM_UNAVAILABLE;
-        }
-        else
-        {
-            info->rgstate[2] = STATE_SYSTEM_INVISIBLE;
-            info->rgstate[3] = STATE_SYSTEM_INVISIBLE;
-            info->rgstate[4] = STATE_SYSTEM_INVISIBLE;
-            info->rgstate[5] = STATE_SYSTEM_INVISIBLE;
-        }
     }
     else
         info->rgstate[0] |= STATE_SYSTEM_INVISIBLE;
