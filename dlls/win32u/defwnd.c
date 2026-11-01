@@ -255,22 +255,8 @@ BOOL draw_rect_edge( HDC hdc, RECT *rc, UINT type, UINT flags, UINT width )
 BOOL adjust_window_rect( RECT *rect, DWORD style, BOOL menu, DWORD ex_style, UINT dpi )
 {
     NONCLIENTMETRICSW ncm = {.cbSize = sizeof(ncm)};
-    int adjust = 0;
 
     NtUserSystemParametersInfoForDpi( SPI_GETNONCLIENTMETRICS, 0, &ncm, 0, dpi );
-
-    if ((ex_style & (WS_EX_STATICEDGE|WS_EX_DLGMODALFRAME)) == WS_EX_STATICEDGE)
-        adjust = 1; /* for the outer frame always present */
-    else if ((ex_style & WS_EX_DLGMODALFRAME) || (style & (WS_THICKFRAME|WS_DLGFRAME)))
-        adjust = 2; /* outer */
-
-    if (style & WS_THICKFRAME)
-        adjust += ncm.iBorderWidth + ncm.iPaddedBorderWidth; /* The resize border */
-
-    if ((style & (WS_BORDER|WS_DLGFRAME)) || (ex_style & WS_EX_DLGMODALFRAME))
-        adjust++; /* The other border */
-
-    InflateRect( rect, adjust, adjust );
 
     if (menu) rect->top -= ncm.iMenuHeight + 1;
 
