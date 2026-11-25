@@ -673,6 +673,10 @@ USB_LIBS
 USB_CFLAGS
 SANE_LIBS
 SANE_CFLAGS
+DRMAMDGPU_LIBS
+DRMAMDGPU_CFLAGS
+DRM_LIBS
+DRM_CFLAGS
 HWLOC_LIBS
 HWLOC_CFLAGS
 GNUTLS_LIBS
@@ -1000,11 +1004,15 @@ enable_advapi32
 enable_advpack
 enable_aero_msstyles
 enable_amsi
+enable_amd_ags_x64
+enable_amdxc64
 enable_amstream
 enable_apisetschema
 enable_apphelp
 enable_appwiz_cpl
 enable_appxdeploymentclient
+enable_atiadlxx
+enable_atidxx64
 enable_atl
 enable_atl100
 enable_atl110
@@ -1992,6 +2000,10 @@ GNUTLS_CFLAGS
 GNUTLS_LIBS
 HWLOC_CFLAGS
 HWLOC_LIBS
+DRM_CFLAGS
+DRM_LIBS
+DRMAMDGPU_CFLAGS
+DRMAMDGPU_LIBS
 SANE_CFLAGS
 SANE_LIBS
 USB_CFLAGS
@@ -2888,6 +2900,12 @@ Some influential environment variables:
   HWLOC_CFLAGS
               C compiler flags for hwloc, overriding pkg-config
   HWLOC_LIBS  Linker flags for hwloc, overriding pkg-config
+  DRM_CFLAGS  C compiler flags for libdrm, overriding pkg-config
+  DRM_LIBS    Linker flags for libdrm, overriding pkg-config
+  DRMAMDGPU_CFLAGS
+              C compiler flags for libdrm_amdgpu, overriding pkg-config
+  DRMAMDGPU_LIBS
+              Linker flags for libdrm_amdgpu, overriding pkg-config
   SANE_CFLAGS C compiler flags for sane-backends, overriding pkg-config
   SANE_LIBS   Linker flags for sane-backends, overriding pkg-config
   USB_CFLAGS  C compiler flags for libusb-1.0, overriding pkg-config
@@ -17665,6 +17683,222 @@ fi
     esac
 fi
 
+rm -f conftest.err
+if ${DRM_CFLAGS:+false} :
+then :
+  if test ${PKG_CONFIG+y}
+then :
+  DRM_CFLAGS=`$PKG_CONFIG --cflags libdrm 2>conftest.err`
+fi
+fi
+
+if ${DRM_LIBS:+false} :
+then :
+  if test ${PKG_CONFIG+y}
+then :
+  DRM_LIBS=`$PKG_CONFIG --libs libdrm 2>/dev/null`
+fi
+fi
+
+
+printf '%s\n' "$as_me:${as_lineno-$LINENO}: libdrm cflags: $DRM_CFLAGS" >&5
+printf '%s\n' "$as_me:${as_lineno-$LINENO}: libdrm libs: $DRM_LIBS" >&5
+if test -s conftest.err; then
+     printf %s "$as_me:${as_lineno-$LINENO}: libdrm errors: " >&5
+     cat conftest.err >&5
+fi
+rm -f conftest.err
+if test -n "$DRM_CFLAGS$DRM_LIBS"
+then :
+  ac_save_pkg_CPPFLAGS=$CPPFLAGS
+ac_save_pkg_LIBS=$LIBS
+CPPFLAGS="$CPPFLAGS $DRM_CFLAGS"
+LIBS="$DRM_LIBS $LIBS"
+       for ac_header in xf86drm.h
+do :
+  ac_fn_c_check_header_compile "$LINENO" "xf86drm.h" "ac_cv_header_xf86drm_h" "$ac_includes_default"
+if test "x$ac_cv_header_xf86drm_h" = xyes
+then :
+  printf '%s\n' "#define HAVE_XF86DRM_H 1" >>confdefs.h
+ { printf '%s\n' "$as_me:${as_lineno-$LINENO}: checking for -ldrm" >&5
+printf %s "checking for -ldrm... " >&6; }
+if test ${ac_cv_lib_soname_drm+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) ac_check_soname_save_LIBS=$LIBS
+LIBS="-ldrm $DRM_LIBS $LIBS"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char drmOpen (void);
+int
+main (void)
+{
+return drmOpen ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  case "$LIBEXT" in
+    dll) ac_cv_lib_soname_drm=`$ac_cv_path_LDD conftest.exe | grep "drm" | sed -e "s/dll.*/dll/"';2,$d'` ;;
+    dylib) ac_cv_lib_soname_drm=`$OTOOL -L conftest$ac_exeext | grep "libdrm\\.[0-9A-Za-z.]*dylib" | sed -e "s/^.*\/\(libdrm\.[0-9A-Za-z.]*dylib\).*$/\1/"';2,$d'` ;;
+    *) ac_cv_lib_soname_drm=`$READELF -d conftest$ac_exeext | grep "NEEDED.*libdrm\\.$LIBEXT" | sed -e "s/^.*\\[\\(libdrm\\.$LIBEXT[^	 ]*\\)\\].*$/\1/"';2,$d'`
+       if ${ac_cv_lib_soname_drm:+false} :
+then :
+  ac_cv_lib_soname_drm=`$LDD conftest$ac_exeext | grep "libdrm\\.$LIBEXT" | sed -e "s/^.*\(libdrm\.$LIBEXT[^	 ]*\).*$/\1/"';2,$d'`
+fi ;;
+  esac
+else case e in #(
+  e) ac_cv_lib_soname_drm= ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+  LIBS=$ac_check_soname_save_LIBS ;;
+esac
+fi
+if ${ac_cv_lib_soname_drm:+false} :
+then :
+  { printf '%s\n' "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+printf '%s\n' "not found" >&6; }
+
+else case e in #(
+  e) { printf '%s\n' "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_soname_drm" >&5
+printf '%s\n' "$ac_cv_lib_soname_drm" >&6; }
+
+printf '%s\n' "#define SONAME_LIBDRM \"$ac_cv_lib_soname_drm\"" >>confdefs.h
+
+        ;;
+esac
+fi
+fi
+
+done
+CPPFLAGS=$ac_save_pkg_CPPFLAGS
+LIBS=$ac_save_pkg_LIBS
+fi
+
+
+rm -f conftest.err
+if ${DRMAMDGPU_CFLAGS:+false} :
+then :
+  if test ${PKG_CONFIG+y}
+then :
+  DRMAMDGPU_CFLAGS=`$PKG_CONFIG --cflags libdrm_amdgpu 2>conftest.err`
+fi
+fi
+
+if ${DRMAMDGPU_LIBS:+false} :
+then :
+  if test ${PKG_CONFIG+y}
+then :
+  DRMAMDGPU_LIBS=`$PKG_CONFIG --libs libdrm_amdgpu 2>/dev/null`
+fi
+fi
+
+
+printf '%s\n' "$as_me:${as_lineno-$LINENO}: libdrm_amdgpu cflags: $DRMAMDGPU_CFLAGS" >&5
+printf '%s\n' "$as_me:${as_lineno-$LINENO}: libdrm_amdgpu libs: $DRMAMDGPU_LIBS" >&5
+if test -s conftest.err; then
+     printf %s "$as_me:${as_lineno-$LINENO}: libdrm_amdgpu errors: " >&5
+     cat conftest.err >&5
+fi
+rm -f conftest.err
+if test -n "$DRMAMDGPU_CFLAGS$DRMAMDGPU_LIBS"
+then :
+  ac_save_pkg_CPPFLAGS=$CPPFLAGS
+ac_save_pkg_LIBS=$LIBS
+CPPFLAGS="$CPPFLAGS $DRMAMDGPU_CFLAGS"
+LIBS="$DRMAMDGPU_LIBS $LIBS"
+       for ac_header in amdgpu_drm.h
+do :
+  ac_fn_c_check_header_compile "$LINENO" "amdgpu_drm.h" "ac_cv_header_amdgpu_drm_h" "$ac_includes_default"
+if test "x$ac_cv_header_amdgpu_drm_h" = xyes
+then :
+  printf '%s\n' "#define HAVE_AMDGPU_DRM_H 1" >>confdefs.h
+ { printf '%s\n' "$as_me:${as_lineno-$LINENO}: checking for -ldrm_amdgpu" >&5
+printf %s "checking for -ldrm_amdgpu... " >&6; }
+if test ${ac_cv_lib_soname_drm_amdgpu+y}
+then :
+  printf %s "(cached) " >&6
+else case e in #(
+  e) ac_check_soname_save_LIBS=$LIBS
+LIBS="-ldrm_amdgpu $DRMAMDGPU_LIBS $LIBS"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.
+   The 'extern "C"' is for builds by C++ compilers;
+   although this is not generally supported in C code supporting it here
+   has little cost and some practical benefit (sr 110532).  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char amdgpu_query_info (void);
+int
+main (void)
+{
+return amdgpu_query_info ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"
+then :
+  case "$LIBEXT" in
+    dll) ac_cv_lib_soname_drm_amdgpu=`$ac_cv_path_LDD conftest.exe | grep "drm_amdgpu" | sed -e "s/dll.*/dll/"';2,$d'` ;;
+    dylib) ac_cv_lib_soname_drm_amdgpu=`$OTOOL -L conftest$ac_exeext | grep "libdrm_amdgpu\\.[0-9A-Za-z.]*dylib" | sed -e "s/^.*\/\(libdrm_amdgpu\.[0-9A-Za-z.]*dylib\).*$/\1/"';2,$d'` ;;
+    *) ac_cv_lib_soname_drm_amdgpu=`$READELF -d conftest$ac_exeext | grep "NEEDED.*libdrm_amdgpu\\.$LIBEXT" | sed -e "s/^.*\\[\\(libdrm_amdgpu\\.$LIBEXT[^	 ]*\\)\\].*$/\1/"';2,$d'`
+       if ${ac_cv_lib_soname_drm_amdgpu:+false} :
+then :
+  ac_cv_lib_soname_drm_amdgpu=`$LDD conftest$ac_exeext | grep "libdrm_amdgpu\\.$LIBEXT" | sed -e "s/^.*\(libdrm_amdgpu\.$LIBEXT[^	 ]*\).*$/\1/"';2,$d'`
+fi ;;
+  esac
+else case e in #(
+  e) ac_cv_lib_soname_drm_amdgpu= ;;
+esac
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.beam \
+    conftest$ac_exeext conftest.$ac_ext
+  LIBS=$ac_check_soname_save_LIBS ;;
+esac
+fi
+if ${ac_cv_lib_soname_drm_amdgpu:+false} :
+then :
+  { printf '%s\n' "$as_me:${as_lineno-$LINENO}: result: not found" >&5
+printf '%s\n' "not found" >&6; }
+
+else case e in #(
+  e) { printf '%s\n' "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_soname_drm_amdgpu" >&5
+printf '%s\n' "$ac_cv_lib_soname_drm_amdgpu" >&6; }
+
+printf '%s\n' "#define SONAME_LIBDRM_AMDGPU \"$ac_cv_lib_soname_drm_amdgpu\"" >>confdefs.h
+
+        ;;
+esac
+fi
+fi
+
+done
+CPPFLAGS=$ac_save_pkg_CPPFLAGS
+LIBS=$ac_save_pkg_LIBS
+fi
+
+
 if test "x$with_sane" != "xno"
 then
     rm -f conftest.err
@@ -22113,6 +22347,8 @@ wine_fn_config_makefile dlls/advpack enable_advpack
 wine_fn_config_makefile dlls/advpack/tests enable_tests
 wine_fn_config_makefile dlls/aero.msstyles enable_aero_msstyles
 wine_fn_config_makefile dlls/amsi enable_amsi
+wine_fn_config_makefile dlls/amd_ags_x64 enable_amd_ags_x64
+wine_fn_config_makefile dlls/amdxc64 enable_amdxc64
 wine_fn_config_makefile dlls/amstream enable_amstream
 wine_fn_config_makefile dlls/amstream/tests enable_tests
 wine_fn_config_makefile dlls/apisetschema enable_apisetschema
@@ -22120,6 +22356,8 @@ wine_fn_config_makefile dlls/apphelp enable_apphelp
 wine_fn_config_makefile dlls/apphelp/tests enable_tests
 wine_fn_config_makefile dlls/appwiz.cpl enable_appwiz_cpl
 wine_fn_config_makefile dlls/appxdeploymentclient enable_appxdeploymentclient
+wine_fn_config_makefile dlls/atiadlxx enable_atiadlxx
+wine_fn_config_makefile dlls/atidxx64 enable_atidxx64
 wine_fn_config_makefile dlls/atl enable_atl
 wine_fn_config_makefile dlls/atl/tests enable_tests
 wine_fn_config_makefile dlls/atl100 enable_atl100
@@ -24349,6 +24587,10 @@ GNUTLS_CFLAGS = $GNUTLS_CFLAGS
 GNUTLS_LIBS = $GNUTLS_LIBS
 HWLOC_CFLAGS = $HWLOC_CFLAGS
 HWLOC_LIBS = $HWLOC_LIBS
+DRM_CFLAGS = $DRM_CFLAGS
+DRM_LIBS = $DRM_LIBS
+DRMAMDGPU_CFLAGS = $DRMAMDGPU_CFLAGS
+DRMAMDGPU_LIBS = $DRMAMDGPU_LIBS
 SANE_CFLAGS = $SANE_CFLAGS
 SANE_LIBS = $SANE_LIBS
 USB_CFLAGS = $USB_CFLAGS

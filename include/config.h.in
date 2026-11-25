@@ -6,6 +6,9 @@
 /* Define to the file extension for executables. */
 #undef EXEEXT
 
+/* Define to 1 if you have the <amdgpu_drm.h> header file. */
+#undef HAVE_AMDGPU_DRM_H
+
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #undef HAVE_ARPA_INET_H
 
@@ -681,6 +684,9 @@
 /* Define to 1 if 'xcookie' is a member of 'XEvent'. */
 #undef HAVE_XEVENT_XCOOKIE
 
+/* Define to 1 if you have the <xf86drm.h> header file. */
+#undef HAVE_XF86DRM_H
+
 /* Define to 1 if 'callback' is a member of 'XICCallback'. */
 #undef HAVE_XICCALLBACK_CALLBACK
 
@@ -731,6 +737,12 @@
 
 /* Define to the soname of the libdbus-1 library. */
 #undef SONAME_LIBDBUS_1
+
+/* Define to the soname of the libdrm library. */
+#undef SONAME_LIBDRM
+
+/* Define to the soname of the libdrm_amdgpu library. */
+#undef SONAME_LIBDRM_AMDGPU
 
 /* Define to the soname of the libEGL library. */
 #undef SONAME_LIBEGL
