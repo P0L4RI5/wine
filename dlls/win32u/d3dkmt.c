@@ -982,8 +982,8 @@ NTSTATUS WINAPI NtGdiDdDDIQueryAdapterInfo( D3DKMT_QUERYADAPTERINFO *desc )
             else if (rdna2 || ((e = getenv("FSR4_UPGRADE")) && *e == '1'))
             {
                 /* Navi31 */
-                data->info[0].adapterFamily = 0x91;
-                data->info[0].adapterRevision = 0x3;
+                data->info[0].adapterFamily = 0x96;
+                data->info[0].adapterRevision = 0x3e;
             }
 
             return STATUS_SUCCESS;
